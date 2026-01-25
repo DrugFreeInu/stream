@@ -37,8 +37,9 @@
       z-index: 1;
     }
 
-    /* WATERFALL (vertical motion layer) */
-    iframe#waterfall {
+    /* WATERFALLS (vertical motion layers) */
+    iframe#waterfall,
+    iframe#waterfall2 {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -66,8 +67,9 @@
   <!-- WATER -->
   <iframe id="stream"></iframe>
 
-  <!-- WATERFALL -->
+  <!-- WATERFALLS -->
   <iframe id="waterfall"></iframe>
+  <iframe id="waterfall2"></iframe>
 
   <!-- SCENE CONTENT (empty for now) -->
   <div class="scene"></div>
@@ -77,6 +79,7 @@
     const land = document.getElementById("land");
     const stream = document.getElementById("stream");
     const waterfall = document.getElementById("waterfall");
+    const waterfall2 = document.getElementById("waterfall2");
 
     const landURL = new URL("land.html", window.location.href);
     landURL.searchParams.set("v", Date.now());
@@ -89,6 +92,10 @@
     const waterfallURL = new URL("waterfall.html", window.location.href);
     waterfallURL.searchParams.set("v", Date.now());
     waterfall.src = waterfallURL.toString();
+
+    const waterfall2URL = new URL("waterfall2.html", window.location.href);
+    waterfall2URL.searchParams.set("v", Date.now());
+    waterfall2.src = waterfall2URL.toString();
   </script>
 
 </body>
