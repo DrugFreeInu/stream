@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Waterfall 2</title>
+
+<style>
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+
+<body>
+<canvas id="fx2"></canvas>
+
+<script>
+const canvas = document.getElementById("fx2");
+const ctx = canvas.getContext("2d", { alpha: true });
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+
+/* =========================
+   WATERFALL 2 — softer + offset
+========================= */
+const STRAND_COUNT = 60; // quieter than main
+const strands = [];
+
+// horizontal offset from center (tune this)
+const OFFSET_X = canvas.width * 0.18;
+
+function columnWidth() {
+  return Math.min(220, canvas.width * 0.18);
+}
+
+function centerX() {
+  return canvas.width * 0.5 + OFFSET_X;
+}
+
+for (let i = 0; i < STRAND_COUNT; i++) {
+  strands.push({
+    xOff: (Math.random() - 0.5) * columnWidth(),
+    y: -Math.random() * 600,
+    len: 140 + Math.random() * 420,
+    amp: 0.8 + Math.random() * 2.0,
+    freq: 0.004 + Math.random() * 0.008,
+    phase: Math.random() * Math.PI * 2,
+    thickness: Math.random() < 0.95 ? 1 : 2,
+    alpha: 0.04 + Math.random() * 0.14,
+    speed: 0.7 + Math.random() * 1.4
+  });
+}
+
+/* =========================
+   ANIMATE
+========================= */
+let t = Math.random() * 10;
+let last = performance.now();
+
+function draw(now) {
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.lineCap = "round";
+
+  for (const s of strands) {
+    ctx.beginPath();
+    ctx.lineWidth = s.thickness;
+    ctx.strokeStyle = `rgba(255,255,255,${s.alpha})`;
+
+    const yTop = s.y - s.len;
+    const yBot = s.y;
+
+    let started = false;
+
+    for (let y = yTop; y <= yBot; y += 14) {
+      const x =
+        centerX() +
+        s.xOff +
+        Math.sin(y * s.freq + s.phase + t) * s.amp;
+
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+
+    ctx.stroke();
+
+    // gravity
+    s.y += s.speed;
+
+    // reset only when fully offscreen
+    if (s.y - s.len > canvas.height) {
+      s.y = -Math.random() * 400;
+      s.len = 140 + Math.random() * 420;
+      s.xOff = (Math.random() - 0.5) * columnWidth();
+      s.phase = Math.random() * Math.PI * 2;
+    }
+  }
+
+  t += 0.7 * dt; // slower drift than main
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
