@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Waterfall Merge</title>
+<title>Waterfall</title>
 
 <style>
   html, body {
@@ -29,10 +29,10 @@ const canvas = document.getElementById("fx");
 const ctx = canvas.getContext("2d", { alpha: true });
 
 /* =========================
-   SHARED CONTRACT (matches land.html)
+   SHARED CONTRACT
 ========================= */
-const WATER_HEIGHT_RATIO = 0.3;   // stream occupies bottom 30%
-const HORIZON_THICKNESS = 2;      // matches land line thickness
+const WATER_HEIGHT_RATIO = 0.3;
+const HORIZON_THICKNESS = 2;
 
 function resize() {
   canvas.width = window.innerWidth;
@@ -74,21 +74,6 @@ for (let i = 0; i < STRAND_COUNT; i++) {
 }
 
 /* =========================
-   MERGE IMPACTS (into stream region)
-========================= */
-const impacts = []; // {x, age, strength}
-
-function spawnImpact(x) {
-  impacts.push({
-    x,
-    age: 0,
-    strength: 0.6 + Math.random() * 0.9
-  });
-  // keep it bounded
-  if (impacts.length > 60) impacts.shift();
-}
-
-/* =========================
    ANIMATE
 ========================= */
 let t = 0;
@@ -103,7 +88,7 @@ function draw(now) {
 
   const hy = horizonY();
 
-  /* ---- 1) Draw vertical waterfall ABOVE horizon (do not paint over the black line) ---- */
+  /* ---- Draw waterfall ABOVE horizon only ---- */
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, canvas.width, Math.max(0, hy - HORIZON_THICKNESS));
@@ -120,8 +105,10 @@ function draw(now) {
     let started = false;
 
     for (let y = yTop; y <= yBot; y += 12) {
-      // slight waviness in X but still reads vertical
-      const x = centerX() + s.xOff + Math.sin(y * s.freq + s.phase + t) * s.amp;
+      const x =
+        centerX() +
+        s.xOff +
+        Math.sin(y * s.freq + s.phase + t) * s.amp;
 
       if (!started) {
         ctx.moveTo(x, y);
@@ -136,71 +123,13 @@ function draw(now) {
     // gravity
     s.y += s.speed;
 
-    // when the head reaches horizon, trigger merge and reset strand
+    // reset cleanly at horizon (no interaction)
     if (s.y >= hy - HORIZON_THICKNESS) {
-      spawnImpact(centerX() + s.xOff);
       s.y = -Math.random() * 400;
       s.len = 120 + Math.random() * 380;
       s.xOff = (Math.random() - 0.5) * columnWidth();
       s.phase = Math.random() * Math.PI * 2;
     }
-  }
-
-  ctx.restore();
-
-  /* ---- 2) Draw "flow into stream" BELOW horizon (merge ripples over your stream.html) ---- */
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, hy + HORIZON_THICKNESS, canvas.width, canvas.height - (hy + HORIZON_THICKNESS));
-  ctx.clip();
-
-  for (let i = impacts.length - 1; i >= 0; i--) {
-    const imp = impacts[i];
-    imp.age += dt;
-
-    // lifetime ~ 1.2s
-    const life = 1.2;
-    const k = 1 - Math.min(1, imp.age / life);
-    const fade = k * k;
-
-    // push the merge "down" into the stream region over time
-    const down = imp.age * 140; // speed into stream
-    const baseY = hy + HORIZON_THICKNESS + down;
-
-    // width expands as it mixes into the stream
-    const w = 60 + imp.age * 420;
-    const left = imp.x - w * 0.5;
-
-    // draw a few stream-like horizontal lines that feel like they came from the waterfall
-    const layers = 4;
-    for (let j = 0; j < layers; j++) {
-      const y = baseY + j * 10;
-      if (y > canvas.height + 40) continue;
-
-      ctx.beginPath();
-      ctx.lineWidth = (j === 0 ? 2 : 1);
-      ctx.strokeStyle = `rgba(255,255,255,${0.22 * fade * imp.strength})`;
-
-      let prevY = null;
-
-      for (let x = left; x <= left + w; x += 10) {
-        const yy =
-          y +
-          Math.sin((x * 0.003) + t * 0.8 + imp.age * 2.2 + j) * (2.2 + 1.4 * fade);
-
-        if (prevY !== null && Math.abs(yy - prevY) > 14) continue;
-
-        if (x === left) ctx.moveTo(x, yy);
-        else ctx.lineTo(x, yy);
-
-        prevY = yy;
-      }
-
-      ctx.stroke();
-    }
-
-    // remove dead impacts
-    if (imp.age >= life) impacts.splice(i, 1);
   }
 
   ctx.restore();
