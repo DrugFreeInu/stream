@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stream Lines</title>
+
+<style>
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+canvas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30vh;
+  pointer-events: none;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="water"></canvas>
+
+<script>
+const canvas = document.getElementById("water");
+const ctx = canvas.getContext("2d", { alpha: true });
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = Math.floor(window.innerHeight * 0.3);
+}
+resize();
+window.addEventListener("resize", resize);
+
+/* =========================
+   BASE WATER LINES ONLY
+========================= */
+const LINE_COUNT = 120;
+const lines = [];
+
+for (let i = 0; i < LINE_COUNT; i++) {
+  lines.push({
+    y: Math.random() * canvas.height,
+    amp: 1.5 + Math.random() * 5,
+    freq: 0.0008 + Math.random() * 0.002,
+    phase: Math.random() * Math.PI * 2,
+    thickness: Math.random() < 0.9 ? 1 : 2,
+    alpha: 0.08 + Math.random() * 0.22
+  });
+}
+
+/* =========================
+   DRAW LOOP
+========================= */
+let t = 0;
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.lineCap = "round";
+
+  for (const line of lines) {
+    ctx.beginPath();
+    ctx.lineWidth = line.thickness;
+    ctx.strokeStyle = `rgba(255,255,255,${line.alpha})`;
+
+    let prevY = null;
+
+    for (let x = 0; x <= canvas.width; x += 10) {
+      const y =
+        line.y +
+        Math.sin((x * line.freq) + line.phase + t * 0.6) * line.amp;
+
+      if (prevY !== null && Math.abs(y - prevY) > 12) continue;
+
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+
+      prevY = y;
+    }
+
+    ctx.stroke();
+
+    // subtle vertical drift
+    line.y += Math.sin(t * 0.25 + line.phase) * 0.04;
+    if (line.y < 0) line.y += canvas.height;
+    if (line.y > canvas.height) line.y -= canvas.height;
+  }
+
+  t += 0.01;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>
