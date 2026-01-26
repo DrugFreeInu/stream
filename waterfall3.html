@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sand Accumulation – DFI Sign</title>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background: black;
+  overflow: hidden;
+}
+canvas { display: block; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<script>
+/* =========================
+   CANVAS
+========================= */
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+/* =========================
+   CONFIG
+========================= */
+const GRAIN = 2;
+const GRAVITY = 0.15;
+const DRAG = 0.98;
+const NOISE = 0.02;
+const SPILL_SLOPE = 3;
+const EROSION = 0.002;
+
+/* =========================
+   MASK CANVAS
+========================= */
+const tc = document.createElement("canvas");
+const tctx = tc.getContext("2d");
+let mask = null;
+
+/* =========================
+   RESIZE
+========================= */
+const ground = new Float32Array(1);
+
+function resize() {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+
+  tc.width = canvas.width;
+  tc.height = canvas.height;
+
+  buildMask();
+
+  ground.length = canvas.width;
+  for (let x = 0; x < canvas.width; x++) {
+    ground[x] = canvas.height;
+  }
+}
+addEventListener("resize", resize);
+
+/* =========================
+   BUILD DOT MATRIX MASK
+========================= */
+function buildMask() {
+  tctx.clearRect(0,0,tc.width,tc.height);
+  tctx.fillStyle = "white";
+
+  const DOT = 6;
+  const GAP = 14;
+
+  function dot(x,y){
+    tctx.beginPath();
+    tctx.arc(x,y,DOT,0,Math.PI*2);
+    tctx.fill();
+  }
+
+  const letters = {
+    D:["11110","10001","10001","10001","11110"],
+    F:["11111","10000","11110","10000","10000"],
+    I:["11111","00100","00100","00100","11111"]
+  };
+
+  const word = ["D","F","I"];
+  const cols =
+    letters.D[0].length +
+    letters.F[0].length +
+    letters.I[0].length + 6;
+
+  const startX = canvas.width/2 - (cols * GAP)/2;
+  const startY = canvas.height/2 - (letters.D.length * GAP)/2;
+
+  let cx = startX;
+
+  for (const ch of word) {
+    const grid = letters[ch];
+    for (let y=0;y<grid.length;y++) {
+      for (let x=0;x<grid[y].length;x++) {
+        if (grid[y][x]==="1") {
+          dot(cx + x*GAP, startY + y*GAP);
+        }
+      }
+    }
+    cx += (grid[0].length + 3) * GAP;
+  }
+
+  mask = tctx.getImageData(0,0,canvas.width,canvas.height).data;
+}
+
+/* =========================
+   PARTICLES
+========================= */
+const particles = [];
+
+function spawn() {
+  const x = canvas.width/2 + (Math.random()-0.5)*60;
+  particles.push({
+    x,
+    y: -10,
+    vx: (Math.random()-0.5)*0.3,
+    vy: Math.random()*0.5,
+    phase: Math.random()*Math.PI*2,
+    hue: 180 + Math.random()*120
+  });
+}
+
+/* =========================
+   LOOP
+========================= */
+function animate() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  for (let i=0;i<4;i++) spawn();
+
+  for (let i=particles.length-1;i>=0;i--) {
+    const p = particles[i];
+
+    p.vy += GRAVITY;
+    p.vx += Math.sin(p.y*0.01 + p.phase) * NOISE;
+    p.vx *= DRAG;
+    p.vy *= DRAG;
+
+    p.x += p.vx;
+    p.y += p.vy;
+
+    const xi = p.x | 0;
+    if (xi < 1 || xi >= canvas.width-1) {
+      particles.splice(i,1);
+      continue;
+    }
+
+    if (p.y >= ground[xi]) {
+      const mi = ((p.y | 0) * canvas.width + xi) * 4 + 3;
+      if (mask && mask[mi] > 150) {
+        ground[xi] -= GRAIN;
+
+        if (ground[xi] - ground[xi-1] > SPILL_SLOPE) {
+          ground[xi] += GRAIN;
+          ground[xi-1] -= GRAIN;
+        } else if (ground[xi] - ground[xi+1] > SPILL_SLOPE) {
+          ground[xi] += GRAIN;
+          ground[xi+1] -= GRAIN;
+        }
+      }
+      particles.splice(i,1);
+      continue;
+    }
+
+    ctx.fillStyle = `hsl(${p.hue},70%,60%)`;
+    ctx.fillRect(p.x,p.y,GRAIN,GRAIN);
+  }
+
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  for (let x=0;x<canvas.width;x++) {
+    if (ground[x] < canvas.height) {
+      ctx.fillRect(x, ground[x], 1, canvas.height-ground[x]);
+      ground[x] += EROSION;
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+/* =========================
+   START
+========================= */
+resize();
+animate();
+</script>
+
+</body>
+</html>
