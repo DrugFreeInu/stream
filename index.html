@@ -59,10 +59,23 @@
       z-index: 4;
     }
 
+    /* WATERFALL 3 (DFI sand sign – LEFT SIDE FEATURE) */
+    iframe#waterfall3 {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 40vw;
+      height: 70vh;
+      transform: translateY(-50%);
+      border: none;
+      pointer-events: none;
+      z-index: 3;
+    }
+
     /* SCENE / FUTURE CONTENT */
     .scene {
       position: relative;
-      z-index: 3;
+      z-index: 5;
       width: 100%;
       height: 100%;
     }
@@ -80,8 +93,9 @@
   <!-- WATERFALLS -->
   <iframe id="waterfall"></iframe>
   <iframe id="waterfall2"></iframe>
+  <iframe id="waterfall3"></iframe>
 
-  <!-- SCENE CONTENT (empty for now) -->
+  <!-- SCENE CONTENT -->
   <div class="scene"></div>
 
   <script>
@@ -90,6 +104,7 @@
     const stream = document.getElementById("stream");
     const waterfall = document.getElementById("waterfall");
     const waterfall2 = document.getElementById("waterfall2");
+    const waterfall3 = document.getElementById("waterfall3");
 
     const landURL = new URL("land.html", window.location.href);
     landURL.searchParams.set("v", Date.now());
@@ -106,6 +121,10 @@
     const waterfall2URL = new URL("waterfall2.html", window.location.href);
     waterfall2URL.searchParams.set("v", Date.now());
     waterfall2.src = waterfall2URL.toString();
+
+    const waterfall3URL = new URL("waterfall3.html", window.location.href);
+    waterfall3URL.searchParams.set("v", Date.now());
+    waterfall3.src = waterfall3URL.toString();
   </script>
 
 </body>
