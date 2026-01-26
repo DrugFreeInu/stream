@@ -37,9 +37,8 @@
       z-index: 1;
     }
 
-    /* WATERFALLS (vertical motion layers) */
-    iframe#waterfall,
-    iframe#waterfall2 {
+    /* WATERFALL (normal merge) */
+    iframe#waterfall {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -47,6 +46,17 @@
       border: none;
       pointer-events: none;
       z-index: 2;
+    }
+
+    /* WATERFALL 2 (flows OVER land) */
+    iframe#waterfall2 {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      pointer-events: none;
+      z-index: 4;
     }
 
     /* SCENE / FUTURE CONTENT */
