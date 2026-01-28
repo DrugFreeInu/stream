@@ -1,0 +1,151 @@
+Waterfall
+
+<canvas id="fx"></canvas>
+
+<script>
+const canvas = document.getElementById("fx");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+
+const particles = [];
+const COUNT = 160;
+
+// ripple control
+let rippleTime = 0;
+
+class Stream {
+  constructor() {
+    this.reset(true);
+  }
+
+  reset(initial = false) {
+    this.x = initial
+      ? Math.random() * canvas.width
+      : -Math.random() * 80;
+
+    this.y = canvas.height * 0.25 + Math.random() * 100;
+
+    this.vx = 3 + Math.random() * 1.8;
+    this.vy = 0.6 + Math.random() * 0.8;
+
+    this.size = 0.7 + Math.random() * 0.6;
+    this.curve = (Math.random() - 0.5) * 0.7;
+  }
+
+  update() {
+    this.vy += 0.07;
+    this.vx *= 0.992;
+    this.curve *= 0.995;
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if (this.y > canvas.height + 120 || this.x > canvas.width + 120) {
+      this.reset();
+    }
+  }
+
+  draw() {
+    const speed = Math.hypot(this.vx, this.vy) || 1;
+    const nx = this.vx / speed;
+    const ny = this.vy / speed;
+
+    const len = speed * 6;
+
+    const ripple =
+      Math.sin(this.y * 0.04 + rippleTime) * 6;
+
+    const cx = -ny * len * this.curve + ripple;
+    const cy =  nx * len * this.curve;
+
+    const TRAILS = 3;
+
+    for (let i = TRAILS; i >= 0; i--) {
+      const t = i / (TRAILS + 1);
+
+      const ox = this.x - nx * len * t * 0.8;
+      const oy = this.y - ny * len * t * 0.8;
+
+      /* ======================
+         BACK FILL LAYER
+      ====================== */
+      ctx.save();
+      ctx.translate(ox, oy);
+
+      ctx.globalAlpha = 0.22 * (1 - t);
+      ctx.strokeStyle = "rgba(245,245,240,0.8)"; // off-white
+      ctx.lineWidth =
+        (this.size * 1.6) *
+        (0.6 + Math.min(this.vy * 0.08, 1));
+
+      ctx.shadowColor = "rgba(245,245,240,0.6)";
+      ctx.shadowBlur = 14 + t * 8;
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(
+        cx,
+        cy,
+        -nx * len,
+        -ny * len
+      );
+      ctx.stroke();
+
+      ctx.restore();
+
+      /* ======================
+         FRONT DETAIL LAYER
+      ====================== */
+      ctx.save();
+      ctx.translate(ox, oy);
+
+      ctx.globalAlpha = 0.35 * (1 - t);
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth =
+        this.size *
+        (0.6 + Math.min(this.vy * 0.08, 1));
+
+      ctx.shadowColor = "rgba(255,255,255,0.5)";
+      ctx.shadowBlur = 8 + t * 6;
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(
+        cx,
+        cy,
+        -nx * len,
+        -ny * len
+      );
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+}
+
+for (let i = 0; i < COUNT; i++) {
+  particles.push(new Stream());
+}
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  rippleTime += 0.03;
+
+  particles.forEach(p => {
+    p.update();
+    p.draw();
+  });
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
