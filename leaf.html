@@ -40,10 +40,9 @@ const leaf = {
   y: -40,
   vx: 0,
   vy: 0.6,
-  rot: 0,
-  vr: 0.01,
-  size: 26,
-  landed: false
+  rot: Math.random() * Math.PI,
+  vr: 0.015,
+  size: 26
 };
 
 // ---- wind
@@ -56,8 +55,8 @@ let lastY = null;
 
 function pushWind(x, y){
   if(lastX !== null){
-    windX += (x - lastX) * 0.03;
-    windY += (y - lastY) * 0.02;
+    windX += (x - lastX) * 0.035;
+    windY += (y - lastY) * 0.025;
   }
   lastX = x;
   lastY = y;
@@ -72,7 +71,7 @@ addEventListener("touchmove", e => {
 addEventListener("mouseup", () => lastX = lastY = null);
 addEventListener("touchend", () => lastX = lastY = null);
 
-// ---- draw leaf
+// ---- draw
 function drawLeaf(){
   ctx.save();
   ctx.translate(leaf.x, leaf.y);
@@ -80,14 +79,8 @@ function drawLeaf(){
 
   ctx.beginPath();
   ctx.moveTo(0, -leaf.size);
-  ctx.quadraticCurveTo(
-    leaf.size * 0.9, 0,
-    0, leaf.size
-  );
-  ctx.quadraticCurveTo(
-    -leaf.size * 0.9, 0,
-    0, -leaf.size
-  );
+  ctx.quadraticCurveTo(leaf.size * 0.9, 0, 0, leaf.size);
+  ctx.quadraticCurveTo(-leaf.size * 0.9, 0, 0, -leaf.size);
   ctx.closePath();
 
   ctx.fillStyle = "#9bbf8f";
@@ -104,39 +97,39 @@ function drawLeaf(){
 function tick(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(!leaf.landed){
-    // gravity + wind
-    leaf.vx += windX;
-    leaf.vy += 0.02 + windY * 0.2;
+  const ground = canvas.height - leaf.size * 0.7;
+  const onGround = leaf.y >= ground - 0.5;
 
-    leaf.vx *= 0.98;
-    leaf.vy *= 0.995;
+  // gravity always exists, but weak near ground
+  leaf.vy += onGround ? 0.002 : 0.03;
 
-    leaf.x += leaf.vx;
-    leaf.y += leaf.vy;
+  // apply wind
+  leaf.vx += windX;
+  leaf.vy += windY * 0.15;
 
-    leaf.rot += leaf.vx * 0.01 + leaf.vr;
+  // friction
+  leaf.vx *= onGround ? 0.94 : 0.985;
+  leaf.vy *= onGround ? 0.85 : 0.995;
 
-    // ground collision
-    const ground = canvas.height - leaf.size * 0.8;
-    if(leaf.y >= ground){
-      leaf.y = ground;
-      leaf.vx *= 0.3;
-      leaf.vy = 0;
-      leaf.vr = 0;
-      leaf.landed = true;
-    }
-  } else {
-    // tiny settle drift if wind continues
-    leaf.x += windX * 0.4;
-    leaf.rot += windX * 0.002;
+  // position
+  leaf.x += leaf.vx;
+  leaf.y += leaf.vy;
+
+  // ground contact — gentle settle, not lock
+  if(leaf.y > ground){
+    leaf.y = ground;
+    leaf.vy *= 0.3;
   }
+
+  // rotation — leaf tips onto side
+  leaf.rot += leaf.vx * 0.012 + leaf.vr;
+  leaf.vr *= 0.99;
 
   // wind decay
   windX *= 0.92;
   windY *= 0.92;
 
-  // screen wrap sideways only
+  // horizontal wrap only
   if(leaf.x < -50) leaf.x = canvas.width + 50;
   if(leaf.x > canvas.width + 50) leaf.x = -50;
 
