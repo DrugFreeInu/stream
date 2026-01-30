@@ -34,7 +34,7 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-// ---- leaf state
+// ---- leaf
 const leaf = {
   x: innerWidth / 2,
   y: -40,
@@ -42,7 +42,8 @@ const leaf = {
   vy: 0.6,
   rot: 0,
   vr: 0.01,
-  size: 26
+  size: 26,
+  landed: false
 };
 
 // ---- wind
@@ -103,31 +104,41 @@ function drawLeaf(){
 function tick(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // physics
-  leaf.vx += windX;
-  leaf.vy += 0.02 + windY * 0.2;
+  if(!leaf.landed){
+    // gravity + wind
+    leaf.vx += windX;
+    leaf.vy += 0.02 + windY * 0.2;
 
-  leaf.vx *= 0.98;
-  leaf.vy *= 0.995;
+    leaf.vx *= 0.98;
+    leaf.vy *= 0.995;
 
-  leaf.x += leaf.vx;
-  leaf.y += leaf.vy;
+    leaf.x += leaf.vx;
+    leaf.y += leaf.vy;
 
-  leaf.rot += leaf.vx * 0.01 + leaf.vr;
+    leaf.rot += leaf.vx * 0.01 + leaf.vr;
+
+    // ground collision
+    const ground = canvas.height - leaf.size * 0.8;
+    if(leaf.y >= ground){
+      leaf.y = ground;
+      leaf.vx *= 0.3;
+      leaf.vy = 0;
+      leaf.vr = 0;
+      leaf.landed = true;
+    }
+  } else {
+    // tiny settle drift if wind continues
+    leaf.x += windX * 0.4;
+    leaf.rot += windX * 0.002;
+  }
 
   // wind decay
   windX *= 0.92;
   windY *= 0.92;
 
-  // wrap screen
+  // screen wrap sideways only
   if(leaf.x < -50) leaf.x = canvas.width + 50;
   if(leaf.x > canvas.width + 50) leaf.x = -50;
-
-  // reset if bottom
-  if(leaf.y > canvas.height + 60){
-    leaf.y = -40;
-    leaf.vy = 0.6;
-  }
 
   drawLeaf();
   requestAnimationFrame(tick);
