@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Leaf</title>
+
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0b0f0d;
+    overflow: hidden;
+    touch-action: none;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+
+// ---- leaf state
+const leaf = {
+  x: innerWidth / 2,
+  y: -40,
+  vx: 0,
+  vy: 0.6,
+  rot: 0,
+  vr: 0.01,
+  size: 26
+};
+
+// ---- wind
+let windX = 0;
+let windY = 0;
+
+// ---- input
+let lastX = null;
+let lastY = null;
+
+function pushWind(x, y){
+  if(lastX !== null){
+    windX += (x - lastX) * 0.03;
+    windY += (y - lastY) * 0.02;
+  }
+  lastX = x;
+  lastY = y;
+}
+
+addEventListener("mousemove", e => pushWind(e.clientX, e.clientY));
+addEventListener("touchmove", e => {
+  const t = e.touches[0];
+  pushWind(t.clientX, t.clientY);
+}, { passive: false });
+
+addEventListener("mouseup", () => lastX = lastY = null);
+addEventListener("touchend", () => lastX = lastY = null);
+
+// ---- draw leaf
+function drawLeaf(){
+  ctx.save();
+  ctx.translate(leaf.x, leaf.y);
+  ctx.rotate(leaf.rot);
+
+  ctx.beginPath();
+  ctx.moveTo(0, -leaf.size);
+  ctx.quadraticCurveTo(
+    leaf.size * 0.9, 0,
+    0, leaf.size
+  );
+  ctx.quadraticCurveTo(
+    -leaf.size * 0.9, 0,
+    0, -leaf.size
+  );
+  ctx.closePath();
+
+  ctx.fillStyle = "#9bbf8f";
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255,255,255,0.15)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ---- loop
+function tick(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // physics
+  leaf.vx += windX;
+  leaf.vy += 0.02 + windY * 0.2;
+
+  leaf.vx *= 0.98;
+  leaf.vy *= 0.995;
+
+  leaf.x += leaf.vx;
+  leaf.y += leaf.vy;
+
+  leaf.rot += leaf.vx * 0.01 + leaf.vr;
+
+  // wind decay
+  windX *= 0.92;
+  windY *= 0.92;
+
+  // wrap screen
+  if(leaf.x < -50) leaf.x = canvas.width + 50;
+  if(leaf.x > canvas.width + 50) leaf.x = -50;
+
+  // reset if bottom
+  if(leaf.y > canvas.height + 60){
+    leaf.y = -40;
+    leaf.vy = 0.6;
+  }
+
+  drawLeaf();
+  requestAnimationFrame(tick);
+}
+
+tick();
+</script>
+
+</body>
+</html>
